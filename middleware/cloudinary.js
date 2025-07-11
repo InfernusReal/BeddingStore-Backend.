@@ -3,8 +3,9 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
 // Configure Cloudinary with fallback values
+// Updated to use the new cloud name "BnS-Storage"
 const cloudinaryConfig = {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'Root',
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'BnS-Storage',
   api_key: process.env.CLOUDINARY_API_KEY || '675397964745795',
   api_secret: process.env.CLOUDINARY_API_SECRET || 'GEfA4FB_J1t-SEXGqX-p_ZTwbus',
 };
