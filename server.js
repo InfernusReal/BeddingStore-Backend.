@@ -49,6 +49,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/profits', require('./routes/profits')); // Admin profits/finance routes
 app.use('/api/admin', adminAuthRoutes); // Admin authentication routes
 app.use('/api/announcements', require('./routes/announcements')); // New announcement routes
+app.use('/api/debug', require('./routes/debug')); // Debug routes - REMOVE IN PRODUCTION
 app.use('/api', require('./routes/contact')); // Contact form routes
 app.use('/api', uploadRoutes); // Upload routes for Cloudinary
 
