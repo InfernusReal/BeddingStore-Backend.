@@ -111,7 +111,10 @@ exports.confirmPayment = async (req, res) => {
 
     // Send confirmation email
     const axios = require('axios');
-    await axios.post('http://localhost:5000/api/send-order-confirmation', { orderId });
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.BACKEND_URL || 'https://bns-backend-50d4b78b5740.herokuapp.com'
+      : 'http://localhost:5000';
+    await axios.post(`${baseUrl}/api/send-order-confirmation`, { orderId });
     
     res.json({ message: 'Payment confirmed and email sent successfully' });
   } catch (error) {
