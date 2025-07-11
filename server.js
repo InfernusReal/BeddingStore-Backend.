@@ -34,7 +34,24 @@ app.use('/api', uploadRoutes); // Upload routes for Cloudinary
 app.use('/api', emailRoutes);
 app.use('/api/reviews', require('./routes/reviews'));
 
+// Health check route for Heroku
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'BnS Backend API is running!', 
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API status route
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    service: 'BnS API',
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });
