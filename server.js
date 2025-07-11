@@ -19,7 +19,21 @@ console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+// CORS configuration for production and development
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://bedding-store-frontend.vercel.app',
+    // Add your custom domain here when ready
+    // 'https://yourdomain.com',
+    // 'https://www.yourdomain.com'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // Add this line to support form data
 app.use('/uploads', (req, res, next) => {
