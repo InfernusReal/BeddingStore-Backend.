@@ -9,6 +9,13 @@ const path = require('path');
 // Load environment variables
 require('dotenv').config();
 
+// Debug: Log environment variables (remove in production)
+console.log('🔧 Environment Check:');
+console.log('PORT:', process.env.PORT || '5000');
+console.log('DB_HOST:', process.env.DB_HOST ? '✅ Set' : '❌ Missing');
+console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing');
+console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -53,5 +60,10 @@ app.get('/api/health', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`🚀 Server running on port ${port}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Health check: Visit your app URL to test`);
+}).on('error', (err) => {
+  console.error('❌ Server failed to start:', err);
+  process.exit(1);
 });
