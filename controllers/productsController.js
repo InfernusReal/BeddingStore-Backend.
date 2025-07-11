@@ -19,11 +19,15 @@ exports.getProductBySlug = (req, res) => {
 
 exports.createProduct = (req, res) => {
   try {
-    console.log('Incoming product POST:', {
-      body: req.body,
-      file: req.file
-    });
-    console.log("Received file:", req.file);
+    console.log('=== PRODUCT CREATION REQUEST ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Request file:', req.file ? {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path
+    } : 'NO FILE');
+    
     const { name, description, price, published } = req.body;
     let { collection_id } = req.body;
     const slug = slugify(name, { lower: true });
@@ -44,7 +48,13 @@ exports.createProduct = (req, res) => {
     }
 
     if (!image_url) {
-      console.error('Image upload required');
+      console.error('=== IMAGE UPLOAD FAILED ===');
+      console.error('req.file:', req.file);
+      console.error('Cloudinary env check:', {
+        CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? 'SET' : 'MISSING',
+        CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? 'SET' : 'MISSING',
+        CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? 'SET' : 'MISSING'
+      });
       return res.status(400).json({ error: 'Image upload required' });
     }
 
@@ -54,15 +64,19 @@ exports.createProduct = (req, res) => {
       [name, slug, description, priceValue, image_url, publishedInt, collection_id],
       (err, result) => {
         if (err) {
-          console.error('DB error:', err);
-          return res.status(500).json({ error: err.message });
+          console.error('DB error:', err.message || err);
+          console.error('Full error object:', JSON.stringify(err, null, 2));
+          return res.status(500).json({ error: err.message || 'Database error' });
         }
         res.status(201).json({ message: 'Product created successfully', productId: result.insertId, image_url });
       }
     );
   } catch (err) {
-    console.error('Unexpected error:', err);
-    res.status(500).json({ error: 'Unexpected error' });
+    console.error('=== UNEXPECTED ERROR IN CREATE PRODUCT ===');
+    console.error('Error message:', err.message);
+    console.error('Error stack:', err.stack);
+    console.error('Full error:', JSON.stringify(err, null, 2));
+    res.status(500).json({ error: 'Unexpected error: ' + err.message });
   }
 };
 
