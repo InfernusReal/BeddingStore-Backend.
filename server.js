@@ -25,6 +25,8 @@ const corsOptions = {
     'http://localhost:3000',
     'http://localhost:5173',
     'https://bedding-store-frontend.vercel.app',
+    'https://bedding.com.pk',
+    'https://www.bedding.com.pk',
     // Add your custom domain here when ready
     // 'https://yourdomain.com',
     // 'https://www.yourdomain.com'
