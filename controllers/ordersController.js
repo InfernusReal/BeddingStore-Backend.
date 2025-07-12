@@ -10,13 +10,14 @@ exports.createOrder = (req, res) => {
     payment_id, 
     total_amount, 
     status = 'pending',
+    user_session,
     items 
   } = req.body;
 
   db.query(
-    `INSERT INTO orders (buyer_name, buyer_email, buyer_phone, buyer_address, payment_method, payment_id, total_amount, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-    [buyer_name, buyer_email, buyer_phone, buyer_address, payment_method, payment_id, total_amount, status],
+    `INSERT INTO orders (buyer_name, buyer_email, buyer_phone, buyer_address, payment_method, payment_id, total_amount, status, user_session, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [buyer_name, buyer_email, buyer_phone, buyer_address, payment_method, payment_id, total_amount, status, user_session],
     (err, result) => {
       if (err) {
         console.error('Error creating order:', err);
@@ -109,7 +110,9 @@ exports.confirmPayment = async (req, res) => {
       );
     });
 
-    // Send confirmation email
+    // ONLY send confirmation email for admin confirmation (EasyPaisa payments)
+    // This prevents duplicate emails since COD orders should not trigger this endpoint
+    console.log('📧 Admin confirmed EasyPaisa payment for order:', orderId, '- sending email...');
     const axios = require('axios');
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? process.env.BACKEND_URL || 'https://bns-backend-50d4b78b5740.herokuapp.com'
@@ -126,37 +129,111 @@ exports.confirmPayment = async (req, res) => {
   }
 };
 
-// Delete order
+// Delete order (only if it belongs to the user session)
 exports.deleteOrder = (req, res) => {
   const orderId = req.params.orderId;
+  const userSession = req.headers['user-session']; // Get user session from headers
 
-  // First delete order items
+  if (!userSession) {
+    return res.status(400).json({ error: 'User session required' });
+  }
+
+  // First check if the order belongs to this user session
   db.query(
-    'DELETE FROM order_items WHERE order_id = ?',
+    'SELECT user_session FROM orders WHERE id = ?',
     [orderId],
-    (err) => {
+    (err, results) => {
       if (err) {
-        console.error('Error deleting order items:', err);
+        console.error('Error checking order ownership:', err);
         return res.status(500).json({ error: err.message });
       }
 
-      // Then delete the order
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      if (results[0].user_session !== userSession) {
+        return res.status(403).json({ error: 'Unauthorized to delete this order' });
+      }
+
+      // Delete order items first
       db.query(
-        'DELETE FROM orders WHERE id = ?',
+        'DELETE FROM order_items WHERE order_id = ?',
         [orderId],
-        (err, result) => {
+        (err) => {
           if (err) {
-            console.error('Error deleting order:', err);
+            console.error('Error deleting order items:', err);
             return res.status(500).json({ error: err.message });
           }
 
-          if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Order not found' });
-          }
+          // Then delete the order
+          db.query(
+            'DELETE FROM orders WHERE id = ?',
+            [orderId],
+            (err, result) => {
+              if (err) {
+                console.error('Error deleting order:', err);
+                return res.status(500).json({ error: err.message });
+              }
 
-          res.json({ message: 'Order deleted successfully' });
+              res.json({ message: 'Order deleted successfully' });
+            }
+          );
         }
       );
+    }
+  );
+};
+
+// Update cart items from temp to pending status
+exports.confirmCartCheckout = (req, res) => {
+  const { userSession } = req.body;
+  
+  console.log('🛒 BACKEND: Confirming cart checkout for session:', userSession);
+  
+  if (!userSession) {
+    return res.status(400).json({ error: 'User session required' });
+  }
+  
+  db.query(
+    'UPDATE orders SET status = ? WHERE user_session = ? AND status = ?',
+    ['confirmed', userSession, 'temp'],
+    (err, result) => {
+      if (err) {
+        console.error('🛒 BACKEND: Error updating cart status:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      console.log('🛒 BACKEND: Updated', result.affectedRows, 'cart items to confirmed');
+      
+      res.json({ 
+        message: 'Cart checkout confirmed successfully',
+        ordersUpdated: result.affectedRows
+      });
+    }
+  );
+};
+
+// Get orders for a specific user session (privacy protection)
+exports.getUserOrders = (req, res) => {
+  const { userSession } = req.params;
+  
+  if (!userSession) {
+    return res.status(400).json({ error: 'User session required' });
+  }
+  
+  db.query(
+    `SELECT o.*, oi.product_id, oi.product_name, oi.product_slug, oi.quantity, oi.price, oi.subtotal
+     FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id
+     WHERE o.user_session = ?
+     ORDER BY o.created_at DESC`,
+    [userSession],
+    (err, results) => {
+      if (err) {
+        console.error('Error fetching user orders:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
     }
   );
 };
