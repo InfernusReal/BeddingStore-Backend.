@@ -115,7 +115,7 @@ exports.confirmPayment = async (req, res) => {
     console.log('📧 Admin confirmed EasyPaisa payment for order:', orderId, '- sending email...');
     const axios = require('axios');
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? process.env.BACKEND_URL || 'https://bns-backend-50d4b78b5740.herokuapp.com'
+      ? process.env.BACKEND_URL || 'https://bnsbackend-d76688301766.herokuapp.com'
       : 'http://localhost:5000';
     await axios.post(`${baseUrl}/api/send-order-confirmation`, { orderId });
     
